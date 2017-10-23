@@ -8,5 +8,6 @@
 5. Git bash there
 6. vagrant up
 7. vagrant ssh
-8. python app.py
-9. The project is running at localhost:5000
+9. cd /vagrant/catalog/
+10. python app.py
+11. The project is running at localhost:5000
