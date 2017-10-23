@@ -18,8 +18,8 @@
         <span class="mdc-toolbar__title">Жatalog</span>
       </section>
       <section class="mdc-toolbar__section mdc-toolbar__section--align-end">
-      {%if login.get('username')!=None%}
-      <span class="mdc-toolbar__title">{{login.get('username')}}</span>
+      {%if login.get('email')!=None%}
+      <span class="mdc-toolbar__title">{{login.get('email')}}</span>
         {%endif%}
         <a href="#" class="material-icons mdc-toolbar__icon toggle" aria-label="More" alt="More">more_vert</a>
         <div class="mdc-menu-anchor">
@@ -39,7 +39,7 @@
                   </div>
                 </li>
                 {% else %}
-                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;">{{login.get('username')}}</li>
+                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;">{{login.get('email')}}</li>
                 <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;" onclick="getjson()">Get Json</li>
                 <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;" onclick="signout()">Signout</li>
                 {%endif%}
@@ -77,7 +77,6 @@
     </main>
     
     
-    <script src="{{url_for('static', filename='app.js')}}"></script>
     <script src="{{url_for('static',filename='node_modules/material-components-web/dist/material-components-web.js')}}"></script>
 
     <script>mdc.autoInit()</script>

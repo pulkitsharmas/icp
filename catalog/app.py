@@ -4,7 +4,7 @@ from flask import make_response
 from oauth2client.client import FlowExchangeError, flow_from_clientsecrets
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Category, Item
+from database_setup_with_user import Base, Category, Item, User
 import random
 import string
 import httplib2
@@ -15,12 +15,13 @@ app = Flask(__name__)
 CLIENT_ID = json.loads(open('client_secrets.json',
                             'r').read())['web']['client_id']
 
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('sqlite:///catalogwithuser.db')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
+# Login Route
 @app.route('/login')
 def getState():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -31,6 +32,7 @@ def getState():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    """Function to connect to google."""
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -101,11 +103,17 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
+    user_id = getUserId(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+
     return redirect(url_for('itemCatalog'))
 
 
 @app.route('/gdisconnect')
 def gdisconnect():
+    """Revoking acess from the user."""
     access_token = login_session.get('access_token')
     if access_token is None:
         print 'Access Token is None'
@@ -116,8 +124,8 @@ def gdisconnect():
     print 'In gdisconnect access token is %s', access_token
     print 'User name is: '
     print login_session['username']
-    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session[
-        'access_token']
+    url = 'https://accounts.google.com/o/oauth2' \
+          '/revoke?token=%s' % login_session['access_token']
     h = httplib2.Http()
     result = h.request(url, 'GET')[0]
     print 'result is '
@@ -140,81 +148,158 @@ def gdisconnect():
 
 @app.route('/items.json')
 def itemsJson():
+    """Return serialized json data of all items."""
     if 'username' not in login_session:
         state = getState()
         items = session.query(Item).all()
-        return render_template("listall.html", items=items, STATE=state, login=login_session, snack="Not logged in")
+        return render_template("listall.html", items=items,
+                               STATE=state, login=login_session,
+                               snack="Not logged in")
     else:
         items = session.query(Item).all()
         return jsonify(Items=[i.serialize for i in items])
 
 
+@app.route('/items/<int:item_id>/json')
+def itemJson(item_id):
+    """Return serialized json data of a single item"""
+    if 'username' not in login_session:
+        state = getState()
+        items = session.query(Item).all()
+        return render_template("listall.html", items=items,
+                               STATE=state, login=login_session,
+                               snack="Not logged in")
+    else:
+        item = session.query(Item).filter_by(id=item_id).one()
+        return jsonify(Item=item.serialize)
+
+
 @app.route('/')
 @app.route('/items')
 def itemCatalog():
+    """Listing all the items in the catalog."""
     state = getState()
     items = session.query(Item).all()
-    return render_template("listall.html", items=items, STATE=state, login=login_session)
+    return render_template("listall.html",
+                           items=items, STATE=state, login=login_session)
 
 
 @app.route('/items/new', methods=['GET', 'POST'])
 def newItem():
+    """Function to create a new item."""
+    # Checking if a user is logged in or not
     if 'username' not in login_session:
         state = getState()
         items = session.query(Item).all()
-        return render_template("listall.html", items=items, STATE=state, login=login_session, snack="Not logged in")
+        return render_template("listall.html", items=items,
+                               STATE=state,
+                               login=login_session, snack="Not logged in")
     else:
         if request.method == 'POST':
             print "here at post"
             cat = session.query(Category).filter_by(
                 name=request.form['category']).one()
             item = Item(name=request.form['name'], description=request.form[
-                        'description'], price=request.form['price'], category_id=cat.id)
+                        'description'], price=request.form['price'],
+                        category_id=cat.id,
+                        user_id=login_session['user_id'])
             session.add(item)
             session.commit()
             state = getState()
             items = session.query(Item).all()
-            return render_template("listall.html", items=items, STATE=state, login=login_session)
+            return render_template("listall.html", items=items,
+                                   STATE=state, login=login_session)
         return render_template("newitem.html", login=login_session)
 
 
 @app.route('/items/<int:item_id>/edit', methods=['GET', 'POST'])
 def editItem(item_id):
+    """Function to edit a item using the item id."""
+    # Checking if user is logged in or not.
     if 'username' not in login_session:
         state = getState()
         items = session.query(Item).all()
-        return render_template("listall.html", items=items, STATE=state, login=login_session, snack="Not logged in")
+        return render_template("listall.html", items=items, STATE=state,
+                               login=login_session, snack="Not logged in")
     else:
         item = session.query(Item).filter_by(id=item_id).one()
-        if request.method == 'POST':
-            item.name = request.form['name']
-            item.price = request.form['price']
-            item.description = request.form['description']
-            cat = session.query(Category).filter_by(
-                name=request.form['category']).one()
-            item.category = cat
-            session.add(item)
-            session.commit()
-            return redirect(url_for('itemCatalog'))
-        return render_template("edititem.html", item=item, login=login_session)
+        # Checking if the user is actual owner of item.
+        if login_session['user_id'] != item.user_id:
+            state = getState()
+            items = session.query(Item).all()
+            return render_template("listall.html", items=items, STATE=state,
+                                   login=login_session,
+                                   snack="You can edit your own items only.")
+        else:
+            if request.method == 'POST':
+                item.name = request.form['name']
+                item.price = request.form['price']
+                item.description = request.form['description']
+                cat = session.query(Category).filter_by(
+                    name=request.form['category']).one()
+                item.category = cat
+                session.add(item)
+                session.commit()
+                return redirect(url_for('itemCatalog'))
+            return render_template("edititem.html", item=item,
+                                   login=login_session)
 
 
 @app.route('/items/<int:item_id>/delete', methods=['GET', 'POST'])
 def deleteItem(item_id):
+    """Function to delete an item using item id."""
+    # Checking if a user is logged in or not.
     if 'username' not in login_session:
         state = getState()
         items = session.query(Item).all()
-        return render_template("listall.html", items=items, STATE=state, login=login_session, snack="Not logged in")
+        return render_template("listall.html",
+                               items=items, STATE=state, login=login_session,
+                               snack="Not logged in")
     else:
         item = session.query(Item).filter_by(id=item_id).one()
-        if request.method == 'POST':
-            session.delete(item)
-            session.commit()
-            return redirect(url_for('itemCatalog'))
+        # Checking if user is owner of item or not.
+        if login_session['user_id'] != item.user_id:
+            state = getState()
+            items = session.query(Item).all()
+            return render_template("listall.html", items=items, STATE=state,
+                                   login=login_session,
+                                   snack="You can delete your own items only.")
+        else:
+            if request.method == 'POST':
+                session.delete(item)
+                session.commit()
+                return redirect(url_for('itemCatalog'))
 
-        return render_template("deleteItem.html", login=login_session)
+            return render_template("deleteItem.html", login=login_session)
 
 
+# Getting user id.
+def getUserId(email):
+    try:
+        user = session.query(User).filter_by(
+            email=login_session['email']).one()
+        return user.id
+    except:
+        return None
+
+
+# Getting user information.
+def getUser(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+# Creating user.
+def createUser(login_session):
+    newuser = User(name=login_session['username'],
+                   email=login_session['email'])
+    session.add(newuser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+# Entry point for a server.
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
