@@ -1,4 +1,7 @@
 # Item Catalog Project
+This project is under the FSND.
+A user can run this application to view the list of all the items present. But must be logged in to interact.
+
 ## Steps to install and run
 1. Clone the project.
 2. Go to /catalog/static
@@ -11,3 +14,5 @@
 9. cd /vagrant/catalog/
 10. python app.py
 11. The project is running at localhost:5000
+
+### Google plus oauth2 is used.
