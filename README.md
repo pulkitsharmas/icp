@@ -16,3 +16,5 @@ A user can run this application to view the list of all the items present. But m
 11. The project is running at localhost:5000
 
 ### Google plus oauth2 is used.
+### Developed using Flask in Python.
+### Uses Material Components for Web by Google.
