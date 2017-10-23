@@ -1,0 +1,44 @@
+body {
+	margin: 0;
+	background-color: #f2f2f2
+}
+
+.app-fab--absolute.app-fab--absolute {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+}
+
+@media(min-width: 1024px) {
+   .app-fab--absolute.app-fab--absolute {
+    bottom: 2.5rem;
+    right: 2.5rem;
+  }
+}
+.a {
+	display: flex;
+
+	justify-content: center;
+}
+.price {
+	display: block;
+	text-align: right;
+}
+.item-card {
+  width: 200px;
+  background-color: #fff;
+}
+
+.edit-card {
+	width: 400px;
+	height: 400px;
+	background-color: #fff;	
+}
+
+.delete-card {
+	width: 400px;
+	height: 150px;
+	background-color: #fff;	
+}
+
+

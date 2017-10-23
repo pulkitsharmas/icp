@@ -1,0 +1,20 @@
+{% extends "main.html" %}
+
+{% block content %}
+<div class="a mdc-layout-grid__cell mdc-layout-grid__cell--span-12">
+	<div class="mdc-card delete-card">
+  <form action="#" method="POST">
+  <section class="mdc-card__primary">
+  <h1 class="mdc-card__title mdc-card__title--large price">Delete Item</h1>
+  </section>
+  <section class="mdc-card__supporting-text">
+    Do you really want to delete this item?
+  </section>
+  <section class="mdc-card__actions">
+    <button type ="submit" class="mdc-button mdc-button--compact mdc-card__action">Delete</button>
+    </form>
+    <form action="{{url_for('itemCatalog')}}">
+    <button type="submit" class="mdc-button mdc-button--compact mdc-card__action">Cancel</button></form>
+  </section>
+</div></div>
+{% endblock %}

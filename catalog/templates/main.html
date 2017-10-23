@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html class="mdc-typography">
+  <head>
+    <title>Material Components for the web</title>
+     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500" rel="stylesheet">
+     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='style.css')}}">
+    <link rel="stylesheet"
+          href="{{ url_for('static',filename='node_modules/material-components-web/dist/material-components-web.css')}}">
+    <script src="{{url_for('static', filename='jquery-3.2.1.min.js')}}"></script>
+    <script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
+  </script>
+  </head>
+  <body>
+  <header class="mdc-toolbar mdc-toolbar--fixed">
+    <div class="mdc-toolbar__row">
+      <section class="mdc-toolbar__section mdc-toolbar__section--align-start">
+        <span class="mdc-toolbar__title">Жatalog</span>
+      </section>
+      <section class="mdc-toolbar__section mdc-toolbar__section--align-end">
+      {%if login.get('username')!=None%}
+      <span class="mdc-toolbar__title">{{login.get('username')}}</span>
+        {%endif%}
+        <a href="#" class="material-icons mdc-toolbar__icon toggle" aria-label="More" alt="More">more_vert</a>
+        <div class="mdc-menu-anchor">
+            <div class="mdc-simple-menu mdc-simple-menu" tabindex="-1" id="demo-menu" style="transform-origin: right top 0px; right: 0px; top: 0px; transform: scale(1, 1);">
+              <ul class="mdc-simple-menu__items mdc-list" role="menu" aria-hidden="true" style="transform: scale(1, 1);">
+              {% if login.get('username')== None %}
+                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;"><div id="signinButton">
+                    <span class="g-signin"
+                      data-scope="openid email"
+                      data-clientid="301753277749-equ050e4q9sgr79v00402evr6tk24s6h.apps.googleusercontent.com"
+                      data-redirecturi="postmessage"
+                      data-accesstype="offline"
+                      data-cookiepolicy="single_host_origin"
+                      data-callback="signInCallback"
+                      data-approvalprompt="force">
+                    </span>
+                  </div>
+                </li>
+                {% else %}
+                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;">{{login.get('username')}}</li>
+                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;" onclick="getjson()">Get Json</li>
+                <li class="mdc-list-item" role="menuitem" tabindex="0" style="transition-delay: 0.069s;" onclick="signout()">Signout</li>
+                {%endif%}
+              </ul>
+            </div>
+          </div>
+      </section>
+    </div>
+  </header>
+
+    <main class="mdc-toolbar-fixed-adjust">
+    
+      <div class="mdc-layout-grid">
+          <div class="mdc-layout-grid__inner">
+            {% block content %}
+            {% endblock %}  
+          </div>
+      </div>
+
+          <div class="mdc-snackbar mdc-snackbar--align-start"
+         aria-live="assertive"
+         aria-atomic="true"
+         aria-hidden="true">
+      <div class="mdc-snackbar__text"></div>
+      <div class="mdc-snackbar__action-wrapper">
+        <button type="button" class="mdc-button mdc-snackbar__action-button"></button>
+      </div>
+    </div>
+
+    <form action="{{url_for('newItem')}}">
+    <button type="submit" class="mdc-fab app-fab--absolute material-icons" aria-label="Add"  data-mdc-auto-init="MDCRipple">
+      <span class="mdc-fab__icon">add</span>
+    </button>
+    </form>
+    </main>
+    
+    
+    <script src="{{url_for('static', filename='app.js')}}"></script>
+    <script src="{{url_for('static',filename='node_modules/material-components-web/dist/material-components-web.js')}}"></script>
+
+    <script>mdc.autoInit()</script>
+    {% if snack %}
+    <script>
+
+    const snackbar = new mdc.snackbar.MDCSnackbar(document.querySelector('.mdc-snackbar'));
+const dataObj = {
+  message: "{{snack}}",
+};
+
+snackbar.show(dataObj);
+</script>
+    {% endif%}
+
+    <script>
+       var menuEl = document.querySelector('#demo-menu');
+      var menu = new mdc.menu.MDCSimpleMenu(menuEl);
+      var toggle = document.querySelector('.toggle');
+      toggle.addEventListener('click', function() {
+        menu.open = !menu.open;
+      });
+    </script>
+    <script>
+      function signInCallback(authResult) {
+        if(authResult['code']) {
+          $.ajax({
+            type: 'POST',
+            url: '/gconnect?state={{STATE}}',
+            processData: false,
+            contentType: 'application/octet-stream; charset=utf-8',
+            data: authResult['code'],
+            success: function(result) {
+              window.location.href = "/";
+            }
+          });
+        } else if(authResult['error']) {
+          console.log(authResult['error']);
+        } else {
+
+        }
+      }
+
+      function getjson() {
+        window.location.href = '/items.json'
+      }
+      function signout() {
+        window.location.href = '/gdisconnect';
+      }
+    </script>
+  </body>
+</html>

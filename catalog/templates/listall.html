@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+
+{% block content %}
+	{% for item in items %}
+		<div class="a mdc-layout-grid__cell mdc-layout-grid__cell--span-2"><div class="item-card mdc-card">
+  <section class="mdc-card__primary">
+<span class="price mdc-card__subtitle ">{{item.price}} INR</span>
+    <h1 class="mdc-card__title mdc-card__title--large">{{item.name}}</h1>
+    <h2 class="mdc-card__subtitle">{{item.category.name}}</h2>
+    
+  </section>
+  <section class="mdc-card__supporting-text">
+    {{item.description}}
+  </section>
+  <section class="mdc-card__actions">
+  <form action= '{{url_for('editItem',item_id=item.id)}}'>
+    <button class="mdc-button mdc-button--compact mdc-card__action">Edit</button></form>
+  <form action= '{{url_for('deleteItem',item_id=item.id)}}'>
+    <button class="mdc-button mdc-button--compact mdc-card__action">Delete</button></form>
+  </section>
+</div></div>
+	{% endfor %}
+{% endblock %}
